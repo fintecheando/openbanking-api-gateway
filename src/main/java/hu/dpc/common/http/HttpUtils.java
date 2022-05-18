@@ -1,5 +1,7 @@
 package hu.dpc.common.http;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import hu.dpc.openbanking.apigateway.entities.RestResponseCommon;
 import org.apache.commons.io.IOUtils;
@@ -9,10 +11,14 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
+
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -92,12 +98,24 @@ public class HttpUtils {
             LOG.info(s);
             System.out.println(s);
             final ObjectMapper mapper = new ObjectMapper();
-            final T result = mapper.readValue(jsonResult, type);
+            final T result = mapper.reader().forType(type).readValue(jsonResult);
             result.setResponseCode(responseCode);
             result.setRawResponse(jsonResult);
 
             return result;
-        } catch (final Exception e) {
+        } catch (final MalformedURLException e) {
+            LOG.error("Something went wrong!", e);
+            throw new HTTPCallExecutionException(e);
+        } catch (final ProtocolException e) {
+            LOG.error("Something went wrong!", e);
+            throw new HTTPCallExecutionException(e);
+        } catch (final JsonMappingException e) {
+            LOG.error("Something went wrong!", e);
+            throw new HTTPCallExecutionException(e);
+        } catch (final JsonProcessingException e) {
+            LOG.error("Something went wrong!", e);
+            throw new HTTPCallExecutionException(e);
+        } catch (final IOException e) {
             LOG.error("Something went wrong!", e);
             throw new HTTPCallExecutionException(e);
         }
